@@ -1,0 +1,208 @@
+{
+  "entities": {
+    "ResumeDocument": {
+      "title": "ResumeDocument",
+      "description": "A structured CV / resume authored by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "title": {
+          "type": "string",
+          "description": "Internal title of the resume version."
+        },
+        "templateId": {
+          "type": "string",
+          "enum": ["executive_navy", "editorial_serif", "modern_minimal"],
+          "description": "Selected visual template identifier."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Candidate full name."
+        },
+        "jobTitle": {
+          "type": "string",
+          "description": "Target professional headline."
+        },
+        "email": {
+          "type": "string",
+          "description": "Contact email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number."
+        },
+        "location": {
+          "type": "string",
+          "description": "City, region, or country."
+        },
+        "website": {
+          "type": "string",
+          "description": "Portfolio, LinkedIn, or GitHub URL."
+        },
+        "summary": {
+          "type": "string",
+          "description": "Executive professional summary."
+        },
+        "experiences": {
+          "type": "array",
+          "description": "Bounded list of work experience maps."
+        },
+        "educations": {
+          "type": "array",
+          "description": "Bounded list of education maps."
+        },
+        "skills": {
+          "type": "array",
+          "description": "Bounded list of skill strings."
+        },
+        "projects": {
+          "type": "array",
+          "description": "Bounded list of project maps."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "templateId",
+        "fullName",
+        "jobTitle",
+        "email",
+        "phone",
+        "location",
+        "website",
+        "summary",
+        "experiences",
+        "educations",
+        "skills",
+        "projects",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CoverLetterDocument": {
+      "title": "CoverLetterDocument",
+      "description": "A tailored cover letter generated or edited for a target job.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "resumeId": {
+          "type": "string",
+          "description": "Associated resume document ID."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Target company name."
+        },
+        "targetRole": {
+          "type": "string",
+          "description": "Target job title."
+        },
+        "jobDescription": {
+          "type": "string",
+          "description": "Job description text used for tailoring."
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["Executive", "Impactful", "Conversational"],
+          "description": "Selected writing tone."
+        },
+        "content": {
+          "type": "string",
+          "description": "Full cover letter body text."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "resumeId",
+        "companyName",
+        "targetRole",
+        "jobDescription",
+        "tone",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessageDocument": {
+      "title": "ChatMessageDocument",
+      "description": "A single message turn in the multi-turn Gemini Career Coach thread.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "model"],
+          "description": "Sender role in conversation."
+        },
+        "text": {
+          "type": "string",
+          "description": "Message markdown or plain text content."
+        },
+        "modelTier": {
+          "type": "string",
+          "description": "Gemini model identifier used for this turn."
+        },
+        "suggestedSummary": {
+          "type": "string",
+          "description": "Optional actionable summary/bullet snippet extracted for one-tap CV insertion."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "role",
+        "text",
+        "modelTier",
+        "suggestedSummary",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/resumes/{resumeId}": {
+      "schema": { "$ref": "#/entities/ResumeDocument" },
+      "description": "User-owned structured resumes."
+    },
+    "/users/{userId}/coverLetters/{letterId}": {
+      "schema": { "$ref": "#/entities/CoverLetterDocument" },
+      "description": "User-owned tailored cover letters."
+    },
+    "/users/{userId}/chatMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessageDocument" },
+      "description": "User-owned multi-turn Gemini Career Coach conversation history."
+    }
+  }
+}

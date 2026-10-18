@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidResumeDocument(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'title', 'templateId', 'fullName', 'jobTitle',
+               'email', 'phone', 'location', 'website', 'summary',
+               'experiences', 'educations', 'skills', 'projects',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'title', 'templateId', 'fullName', 'jobTitle',
+               'email', 'phone', 'location', 'website', 'summary',
+               'experiences', 'educations', 'skills', 'projects',
+               'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.templateId is string && data.templateId in ['executive_navy', 'editorial_serif', 'modern_minimal'] &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 120 &&
+             data.jobTitle is string && data.jobTitle.size() <= 120 &&
+             data.email is string && data.email.size() <= 160 &&
+             data.phone is string && data.phone.size() <= 60 &&
+             data.location is string && data.location.size() <= 120 &&
+             data.website is string && data.website.size() <= 200 &&
+             data.summary is string && data.summary.size() <= 3000 &&
+             data.experiences is list && data.experiences.size() <= 25 &&
+             (data.experiences.size() == 0 || data.experiences[0] is map) &&
+             data.educations is list && data.educations.size() <= 15 &&
+             (data.educations.size() == 0 || data.educations[0] is map) &&
+             data.skills is list && data.skills.size() <= 50 &&
+             (data.skills.size() == 0 || (data.skills[0] is string && data.skills[0].size() <= 80)) &&
+             data.projects is list && data.projects.size() <= 20 &&
+             (data.projects.size() == 0 || data.projects[0] is map) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCoverLetterDocument(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'resumeId', 'companyName', 'targetRole',
+               'jobDescription', 'tone', 'content', 'createdAt', 'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'resumeId', 'companyName', 'targetRole',
+               'jobDescription', 'tone', 'content', 'createdAt', 'updatedAt'
+             ]) &&
+             data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.resumeId is string && data.resumeId.size() <= 128 &&
+             data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 120 &&
+             data.targetRole is string && data.targetRole.size() >= 1 && data.targetRole.size() <= 120 &&
+             data.jobDescription is string && data.jobDescription.size() <= 5000 &&
+             data.tone is string && data.tone in ['Executive', 'Impactful', 'Conversational'] &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 12000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidChatMessageDocument(data, userId) {
+      return data.keys().hasAll([
+               'userId', 'role', 'text', 'modelTier', 'suggestedSummary', 'createdAt'
+             ]) &&
+             data.keys().hasOnly([
+               'userId', 'role', 'text', 'modelTier', 'suggestedSummary', 'createdAt'
+             ]) &&
+             data.userId is string && data.userId == userId && data.userId == request.auth.uid &&
+             data.role is string && data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 12000 &&
+             data.modelTier is string && data.modelTier.size() >= 1 && data.modelTier.size() <= 60 &&
+             data.suggestedSummary is string && data.suggestedSummary.size() <= 3000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId}/resumes/{resumeId} {
+      allow get: if isOwner(userId) && isValidId(resumeId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(resumeId) &&
+                       isValidResumeDocument(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(resumeId) &&
+                       isValidResumeDocument(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'templateId', 'fullName', 'jobTitle',
+                         'email', 'phone', 'location', 'website', 'summary',
+                         'experiences', 'educations', 'skills', 'projects', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(resumeId) && existing().userId == request.auth.uid;
+    }
+
+    match /users/{userId}/coverLetters/{letterId} {
+      allow get: if isOwner(userId) && isValidId(letterId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(letterId) &&
+                       isValidCoverLetterDocument(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(letterId) &&
+                       isValidCoverLetterDocument(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'resumeId', 'companyName', 'targetRole',
+                         'jobDescription', 'tone', 'content', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(letterId) && existing().userId == request.auth.uid;
+    }
+
+    match /users/{userId}/chatMessages/{messageId} {
+      allow get: if isOwner(userId) && isValidId(messageId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(messageId) &&
+                       isValidChatMessageDocument(incoming(), userId);
+
+      allow update: if false;
+
+      allow delete: if isOwner(userId) && isValidId(messageId) && existing().userId == request.auth.uid;
+    }
+  }
+}

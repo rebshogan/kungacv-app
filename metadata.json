@@ -1,0 +1,6 @@
+{
+  "name": "KungaCV",
+  "description": "AI Resume & CV Builder with live multi-template preview, PDF export, tailored cover letter studio, and a multi-turn Gemini Career Coach.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
